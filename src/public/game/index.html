@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World</title>
+    <link rel="stylesheet" href="/style/index.css">
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+</body>
+<script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    let direction = 0;
+
+    function setSize() {
+        canvas.height = innerHeight;
+        canvas.width = innerWidth;
+    }
+
+    addEventListener("resize", setSize);
+    addEventListener("keydown", handleKeyDown);
+    addEventListener("keyup", handleKeyUp);
+
+    class Player {
+        constructor() {
+            this.y = 0;
+            this.score = 0;
+        }
+    }
+
+    class Ball {
+        constructor() {
+            const initDirection = Math.random() > 0.5 ? 1 : -1;
+
+            this.x = this.y = 0;
+            this.velocity = {
+                x: initDirection,
+                y: Math.random() * 2 - 1
+            }
+
+            this.speed = 0.01;
+        }
+    }
+
+    const players = [
+        new Player(),
+        new Player()
+    ]
+
+    const me = players[0];
+    const ball = new Ball();
+
+    function handleKeyDown(event) {
+        if (event.key == "w") return direction = -1;
+        if (event.key == "s") return direction = 1;
+    }
+
+    function handleKeyUp(event) {
+        if (event.key == "w" || event.key == "s") return direction = 0;
+    }
+
+    function handleKeys() {
+        console.log(direction)
+
+        me.y = Math.min(Math.max(me.y + 0.01 * direction, 0), 0.8);
+    }
+
+    setInterval(handleKeys, 10);
+
+    function drawTextCentered(text, x, y) {
+        ctx.fillText(text, x - ctx.measureText(text).width / 2, y);
+    }
+
+    function renderPadels() {
+        for (const [indexStr, padel] of Object.entries(players)) {
+            const index = parseInt(indexStr);
+
+            const posX = index ? canvas.width - 20 : 0;
+            const posY = canvas.height * (padel.y);
+
+            const paddleHeight = canvas.height * 0.2;
+
+            ctx.fillRect(posX, posY, 20, paddleHeight);
+        }
+    }
+
+    function renderBall() {
+        ball.x += ball.velocity.x * ball.speed;
+        ball.y += ball.velocity.y * ball.speed;
+
+        // handle padles
+
+        for (const [indexStr, padel] of Object.entries(players)) {
+            const index = parseInt(indexStr);
+
+            const posX = index ? canvas.width - 20 : 0;
+            const posY = canvas.height * (padel.y);
+
+            const paddleHeight = canvas.height * 0.2;
+
+            const withinY = (ball.y+0.5) > padel.y && (ball.y+0.5) < padel.y + 0.2;
+            const withinX = index ? posX > ball.x : posX < 20;
+
+            if (withinX && withinY) {
+                if (ball.x < -0.5) return renderBall(ball.velocity.x = Math.abs(ball.velocity.x));
+                if (ball.x > 0.5) return renderBall(ball.velocity.x = -Math.abs(ball.velocity.x));
+            }
+        }
+
+        // handle walls
+
+        if (ball.x < -0.5) return renderBall(ball.velocity.x = Math.abs(ball.velocity.x), players[1].score++);
+        if (ball.x > 0.5) return renderBall(ball.velocity.x = -Math.abs(ball.velocity.x), players[0].score++);
+
+        if (ball.y < -0.5) return renderBall(ball.velocity.y = Math.abs(ball.velocity.y));
+        if (ball.y > 0.5) return renderBall(ball.velocity.y = -Math.abs(ball.velocity.y));
+
+        const ballWidth = canvas.width * 0.005;
+
+        const posX = canvas.width * 0.5 + canvas.width * ball.x - ballWidth * 0.5;
+        const posY = canvas.height * 0.5 + canvas.height * ball.y - ballWidth * 0.5;
+
+        ctx.fillRect(posX, posY, ballWidth, ballWidth)
+    }
+
+    function anim() {
+        ctx.save();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "white";
+        ctx.font = "48px monospace";
+
+        drawTextCentered("CODE: 1234", canvas.width / 2, 100)
+        drawTextCentered(`${players[0].score} | ${players[1].score}`, canvas.width / 2, 160)
+
+        renderPadels();
+        renderBall();
+
+        requestAnimationFrame(anim);
+    }
+
+    setSize();
+    anim();
+</script>
+<!--
+    const isLocalhost = window.location.host.indexOf("localhost") == 0;
+    const protocol = isLocalhost ? "ws://" : "wss://";
+
+    const socket = new WebSocket(protocol + window.location.host);
+
+    socket.onclose = () => {
+        location.reload();
+    }
+
+    socket.onopen = () => {
+        let keepaliveCount = 0;
+        setInterval(() => { socket.send("keepalive/" + keepaliveCount++); }, 60 * 1000);
+
+        console.log("connected");
+    }
+
+-->
+
+</html>
